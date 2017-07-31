@@ -332,13 +332,26 @@ func TestBasicBitswap(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	time.Sleep(time.Millisecond * 25)
-	wl := instances[2].Exchange.WantlistForPeer(instances[1].Peer)
-	if len(wl) != 0 {
-		t.Fatal("should have no items in other peers wantlist")
+	check := func() error {
+		if len(instances[2].Exchange.WantlistForPeer(instances[1].Peer)) != 0 {
+			return fmt.Errorf("should have no items in other peers wantlist")
+		}
+
+		if len(instances[1].Exchange.GetWantlist()) != 0 {
+			return fmt.Errorf("shouldnt have anything in wantlist")
+		}
+		return nil
 	}
-	if len(instances[1].Exchange.GetWantlist()) != 0 {
-		t.Fatal("shouldnt have anything in wantlist")
+
+	for {
+		time.Sleep(time.Millisecond * 10)
+		err := check()
+		if err == nil {
+			break
+		}
+		if ctx.Err() != nil {
+			t.Fatal(err)
+		}
 	}
 
 	st0, err := instances[0].Exchange.Stat()
